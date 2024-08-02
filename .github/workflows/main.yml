@@ -1,0 +1,53 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' 
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup Devenv
+      uses: seanmiddleditch/gha-setup-vsdevenv@master
+
+    - name: Setup Qt
+      run: |
+        pip install aqtinstall
+        mkdir Qt
+        cd Qt
+        aqt install-qt windows desktop 5.12.12 win32_msvc2017
+        aqt install-qt windows desktop 5.12.12 win64_msvc2017_64
+
+    - name: Build x86
+      shell: cmd
+      run: |
+        set QTDIR=%GITHUB_WORKSPACE%\Qt\5.12.12\msvc2017
+        set PATH=%PATH%;%GITHUB_WORKSPACE%\Qt\5.12.12\msvc2017\bin
+        cmd.exe /c build-libffi.bat
+        cmd.exe /c build-ultimate-x86.bat
+
+    - name: Build x64
+      shell: cmd
+      run: |
+        set QTDIR=%GITHUB_WORKSPACE%\Qt\5.12.12\msvc2017_64
+        set PATH=%PATH%;%GITHUB_WORKSPACE%\Qt\5.12.12\msvc2017_64\bin
+        cmd.exe /c build-libffi.bat
+        cmd.exe /c build-ultimate-x64.bat
+ 
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build
+        path: bin
+        compression-level: 9
